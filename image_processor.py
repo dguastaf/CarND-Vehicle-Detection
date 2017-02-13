@@ -28,15 +28,15 @@ class ImageProcessor:
         total = np.zeros_like(gradx)
         total[((gradx == 1) | (ls == 1))] = 1
 
-        f, p = plt.subplots(2, 2)
-        # f, (ax1) = plt.subplots(1, 1)
-        f.tight_layout()
+        # f, p = plt.subplots(2, 2)
+        # # f, (ax1) = plt.subplots(1, 1)
+        # f.tight_layout()
 
-        p[0][0].imshow(cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
-        p[0][0].set_title('Original Image', fontsize=10)
+        # p[0][0].imshow(cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+        # p[0][0].set_title('Original Image', fontsize=10)
 
-        p[0][1].imshow(gradx, cmap='gray')
-        p[0][1].set_title('Sobel X', fontsize=10)
+        # p[0][1].imshow(gradx, cmap='gray')
+        # p[0][1].set_title('Sobel X', fontsize=10)
 
         # p[0][2].imshow(grady, cmap='gray')
         # p[0][2].set_title('Sobel Y', fontsize=10)
@@ -50,13 +50,15 @@ class ImageProcessor:
         # p[1][2].imshow(s, cmap='gray')
         # p[1][2].set_title('Saturation', fontsize=10)
 
-        p[1][0].imshow(ls, cmap='gray')
-        p[1][0].set_title('Lightness & Saturation', fontsize=10)
+        # p[1][0].imshow(ls, cmap='gray')
+        # p[1][0].set_title('Lightness & Saturation', fontsize=10)
 
-        p[1][1].imshow(total, cmap='gray')
-        p[1][1].set_title('Light & Sat OR Sobel X', fontsize=10)
+        # p[1][1].imshow(total, cmap='gray')
+        # p[1][1].set_title('Light & Sat OR Sobel X', fontsize=10)
 
-        plt.show()
+        # plt.show()
+
+        return total
 
     def __hls_thresh(self, img, channel=1, thresh=(0, 255)):
         hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HLS).astype(np.float)
