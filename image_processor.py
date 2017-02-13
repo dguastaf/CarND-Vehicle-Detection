@@ -13,11 +13,11 @@ class ImageProcessor:
         image = cv2.undistort(image, self.__mtx, self.__dist, None, self.__mtx)
         gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 
-        gradx = self.__abs_sobel_thresh(gray, orient='x', thresh=(40, 100))
-        grady = self.__abs_sobel_thresh(gray, orient='y', thresh=(50, 200))
+        gradx = self.__abs_sobel_thresh(gray, orient='x', thresh=(30, 100))
+        # grady = self.__abs_sobel_thresh(gray, orient='y', thresh=(50, 200))
 
-        combined = np.zeros_like(gray)
-        combined[((gradx == 1) & (grady == 1))] = 1
+        # combined = np.zeros_like(gray)
+        # combined[((gradx == 1) & (grady == 1))] = 1
 
         light = self.__hls_thresh(image, channel=1, thresh=(130, 255))
         s = self.__hls_thresh(image, channel=2, thresh=(140, 255))
@@ -25,10 +25,10 @@ class ImageProcessor:
         ls = np.zeros_like(light)
         ls[((light == 1) & (s == 1))] = 1
 
-        total = np.zeros_like(combined)
-        total[((combined == 1) | (ls == 1))] = 1
+        total = np.zeros_like(gradx)
+        total[((gradx == 1) | (ls == 1))] = 1
 
-        f, p = plt.subplots(3, 3)
+        f, p = plt.subplots(2, 2)
         # f, (ax1) = plt.subplots(1, 1)
         f.tight_layout()
 
@@ -38,23 +38,23 @@ class ImageProcessor:
         p[0][1].imshow(gradx, cmap='gray')
         p[0][1].set_title('Sobel X', fontsize=10)
 
-        p[0][2].imshow(grady, cmap='gray')
-        p[0][2].set_title('Sobel Y', fontsize=10)
+        # p[0][2].imshow(grady, cmap='gray')
+        # p[0][2].set_title('Sobel Y', fontsize=10)
 
-        p[1][0].imshow(combined, cmap='gray')
-        p[1][0].set_title('Combined Sobel X & Y', fontsize=10)
+        # p[1][0].imshow(combined, cmap='gray')
+        # p[1][0].set_title('Combined Sobel X & Y', fontsize=10)
 
-        p[1][1].imshow(light, cmap='gray')
-        p[1][1].set_title('Lightness', fontsize=10)
+        # p[1][1].imshow(light, cmap='gray')
+        # p[1][1].set_title('Lightness', fontsize=10)
 
-        p[1][2].imshow(s, cmap='gray')
-        p[1][2].set_title('Saturation', fontsize=10)
+        # p[1][2].imshow(s, cmap='gray')
+        # p[1][2].set_title('Saturation', fontsize=10)
 
-        p[2][0].imshow(ls, cmap='gray')
-        p[2][0].set_title('Lightness & Saturation', fontsize=10)
+        p[1][0].imshow(ls, cmap='gray')
+        p[1][0].set_title('Lightness & Saturation', fontsize=10)
 
-        p[2][1].imshow(total, cmap='gray')
-        p[2][1].set_title('Light & Sat OR Sobel X & Y', fontsize=10)
+        p[1][1].imshow(total, cmap='gray')
+        p[1][1].set_title('Light & Sat OR Sobel X', fontsize=10)
 
         plt.show()
 
