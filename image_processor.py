@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-from matplotlib import pyplot as plt
 
 
 class ImageProcessor:
@@ -14,10 +13,6 @@ class ImageProcessor:
         gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 
         gradx = self.__abs_sobel_thresh(gray, orient='x', thresh=(30, 100))
-        # grady = self.__abs_sobel_thresh(gray, orient='y', thresh=(50, 200))
-
-        # combined = np.zeros_like(gray)
-        # combined[((gradx == 1) & (grady == 1))] = 1
 
         light = self.__hls_thresh(image, channel=1, thresh=(130, 255))
         s = self.__hls_thresh(image, channel=2, thresh=(140, 255))
@@ -28,36 +23,6 @@ class ImageProcessor:
         total = np.zeros_like(gradx)
         total[((gradx == 1) | (ls == 1))] = 1
 
-        # f, p = plt.subplots(2, 2)
-        # # f, (ax1) = plt.subplots(1, 1)
-        # f.tight_layout()
-
-        # p[0][0].imshow(cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
-        # p[0][0].set_title('Original Image', fontsize=10)
-
-        # p[0][1].imshow(gradx, cmap='gray')
-        # p[0][1].set_title('Sobel X', fontsize=10)
-
-        # p[0][2].imshow(grady, cmap='gray')
-        # p[0][2].set_title('Sobel Y', fontsize=10)
-
-        # p[1][0].imshow(combined, cmap='gray')
-        # p[1][0].set_title('Combined Sobel X & Y', fontsize=10)
-
-        # p[1][1].imshow(light, cmap='gray')
-        # p[1][1].set_title('Lightness', fontsize=10)
-
-        # p[1][2].imshow(s, cmap='gray')
-        # p[1][2].set_title('Saturation', fontsize=10)
-
-        # p[1][0].imshow(ls, cmap='gray')
-        # p[1][0].set_title('Lightness & Saturation', fontsize=10)
-
-        # p[1][1].imshow(total, cmap='gray')
-        # p[1][1].set_title('Light & Sat OR Sobel X', fontsize=10)
-
-        # plt.show()
-
         return total
 
     def __hls_thresh(self, img, channel=1, thresh=(0, 255)):
@@ -67,7 +32,6 @@ class ImageProcessor:
         binary[(single_channel >= thresh[0]) & (single_channel <= thresh[1])] = 1
 
         return binary
-
 
     def __abs_sobel_thresh(self, img, orient='x', kernel=3, thresh=(0, 255)):
         sobel = None
