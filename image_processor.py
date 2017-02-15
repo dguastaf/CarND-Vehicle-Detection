@@ -8,8 +8,10 @@ class ImageProcessor:
         self.__mtx = mtx
         self.__dist = dist
 
+    def undistort(self, image):
+        return cv2.undistort(image, self.__mtx, self.__dist, None, self.__mtx)
+
     def process_next_image(self, image, i):
-        image = cv2.undistort(image, self.__mtx, self.__dist, None, self.__mtx)
         gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 
         gradx = self.__abs_sobel_thresh(gray, orient='x', thresh=(30, 100))

@@ -1,6 +1,6 @@
 import cv2
 from camera_calibrator import calibrate_camera
-from fine_lane_lines import full_search
+from find_lane_lines import full_search
 from image_processor import ImageProcessor
 import numpy as np
 from matplotlib import pyplot as plt
@@ -21,6 +21,26 @@ def display_binary(img):
     plt.show()
 
 
+def draw_lane_box(imageData):
+    warp_zero = np.zeros_like(binary_warped).astype(np.uint8)
+    color_warp = np.dstack((warp_zero, warp_zero, warp_zero))
+
+    pts_left = np.array([np.transpose(np.vstack([imageData.left_fit_x(), imageData.ploty()]))])
+    pts_right = np.array([np.flipud(np.transpose(np.vstack([imageData.right_fit_x(), imageData.ploty()])))])
+    pts = np.hstack((pts_left, pts_right))
+
+    # Draw the lane onto the warped blank image
+    cv2.fillPoly(color_warp, np.int_([pts]), (0, 255, 0))
+
+    Minv = cv2.getPerspectiveTransform(dst, src)
+
+    # Warp the blank back to original image space using inverse perspective matrix (Minv)
+    newwarp = cv2.warpPerspective(color_warp, Minv, (image.shape[1], image.shape[0]))
+
+    # Combine the result with the original image
+    return cv2.addWeighted(undistort_image, 1, newwarp, 0.3, 0)
+
+
 mtx, dist = calibrate_camera()
 
 processor = ImageProcessor(mtx, dist)
@@ -28,8 +48,9 @@ processor = ImageProcessor(mtx, dist)
 # image = cv2.imread('test_images/straight_lines1.jpg')
 # processor.process_next_image(image, 0)
 
-image = cv2.imread('test_images/test6.jpg')
-binary = processor.process_next_image(image, 1)
+image = cv2.imread('test_images/straight_lines1.jpg')
+undistort_image = processor.undistort(image)
+binary = processor.process_next_image(undistort_image, 1)
 
 image_center = image.shape[1] / 2
 top_x_offset = 50
@@ -49,7 +70,11 @@ M = cv2.getPerspectiveTransform(src, dst)
 
 binary_warped = cv2.warpPerspective(binary, M, (1280, 720))
 
-full_search(binary_warped)
+imageData = full_search(binary_warped)
+result = draw_lane_box(imageData)
+
+plt.imshow(cv2.cvtColor(result, cv2.COLOR_RGB2BGR))
+plt.show()
 
 # display_binary(binary_warped)
 
@@ -69,4 +94,4 @@ full_search(binary_warped)
 # plts[1][0].imshow(warped_color)
 # plts[1][1].imshow(warped_binary_rgb)
 
-plt.show()
+# plt.show()
