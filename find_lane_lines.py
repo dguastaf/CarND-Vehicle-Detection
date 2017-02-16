@@ -37,8 +37,6 @@ def full_search(binary_warped):
 
     histogram = np.sum(binary_warped[binary_warped.shape[0] / 2:, :], axis=0)
 
-    plt.plot(histogram)
-
     # Find the peak of the left and right halves of the histogram
     # These will be the starting point for the left and right lines
     midpoint = np.int(histogram.shape[0] / 2)
@@ -96,7 +94,7 @@ def full_search(binary_warped):
 
     debugImage.color_lane(imageData.lefty(), imageData.leftx(), [255, 0, 0])
     debugImage.color_lane(imageData.righty(), imageData.rightx(), [0, 0, 255])
-    debugImage.show_image(imageData.left_fit_x(), imageData.right_fit_x(), imageData.ploty())
+    # debugImage.show_image(imageData.left_fit_x(), imageData.right_fit_x(), imageData.ploty())
 
     return imageData
 
@@ -119,6 +117,12 @@ def poly_search(img, left_fit, right_fit):
     right_lane_inds = ((nonzerox > right_fit_left) & (nonzerox < right_fit_right))
 
     imageData = ImageData(img, nonzerox, nonzeroy, left_lane_inds, right_lane_inds)
+
+    try:
+        imageData.left_fit_x()
+        imageData.right_fit_x()
+    except np.linalg.linalg.LinAlgError:
+        return None
 
     return imageData
     # Again, extract left and right line pixel positions
