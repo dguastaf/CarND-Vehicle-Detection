@@ -5,23 +5,20 @@ import glob
 CAL_DIR = 'camera_cal'
 CALIBRATION_IMG_WILDCARD = CAL_DIR + '/calibration*.jpg'
 CAL_FILE = CAL_DIR + '/calibration_data'
-
 OUTDIR = 'output_images'
 NX = 9
 NY = 6
 
 
+# Calibrates the camera by reading in a series of chessboard images and
+# uses OpenCV to find the distortion matrices. These matrices are saved
+# to avoid needing to recalibrate in future runs
 def calibrate_camera():
     print("Calibraing camera...")
 
-    # See if we have any saved calibration data
     mtx, dist = read_cal_data()
     if mtx is not None and dist is not None:
         print("Camera already calibrated.. returning previous results")
-
-        img = cv2.imread('test_images/test1.jpg')
-        dst = cv2.undistort(img, mtx, dist, None, mtx)
-        cv2.imwrite(OUTDIR + '/test_undist.jpg', dst)
 
         return mtx, dist
 
@@ -51,21 +48,11 @@ def calibrate_camera():
             objpoints.append(objp)
             imgpoints.append(corners)
 
-            # cv2.drawChessboardCorners(image, (NX, NY), corners, ret)
-            # write_name = OUTDIR + '/corners_found' + str(idx) + '.jpg'
-            # cv2.imwrite(write_name, image)
-
-            # cv2.imshow('img', image)
-            # cv2.waitKey(500)
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints,
                                                        imgpoints,
                                                        img_shape,
                                                        None,
                                                        None)
-
-    img = cv2.imread('test_images/test1.jpg')
-    dst = cv2.undistort(img, mtx, dist, None, mtx)
-    cv2.imwrite(OUTDIR + '/test_undist.jpg', dst)
 
     print("Saving calibration data")
     np.savez(CAL_FILE, mtx, dist)
@@ -74,6 +61,7 @@ def calibrate_camera():
     return mtx, dist
 
 
+# Read cached image calibration data from disk. If nothing has been cached, return None
 def read_cal_data():
     try:
         npzfile = np.load(CAL_FILE + ".npz")
@@ -84,5 +72,5 @@ def read_cal_data():
         return vals
 
     except IOError:
-        print("Error loading data")
+        print("No cached calibration data... calibrating camera.")
         return None, None

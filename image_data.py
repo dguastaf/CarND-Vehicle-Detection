@@ -2,8 +2,10 @@ import numpy as np
 
 YM_PER_PIX = 30 / 720  # meters per pixel in y dimension
 XM_PER_PIX = 3.7 / 700  # meters per pixel in x dimension
-LANE_WIDTH = 3.7 # assume lanes have constant width
+LANE_WIDTH = 3.7  # assume lanes have constant width
 
+
+# Holds all the lane-finding data about a specific frame
 class ImageData:
     def __init__(self, image, nonzerox, nonzeroy, left_lane_inds, right_lane_inds):
         self.__image = image
@@ -12,21 +14,27 @@ class ImageData:
         self.__left_lane_inds = left_lane_inds
         self.__right_lane_inds = right_lane_inds
 
+    # X coordinates of the left lane line
     def leftx(self):
         return self.__nonzerox[self.__left_lane_inds]
 
+    # X coordinates of the right lane line
     def rightx(self):
         return self.__nonzerox[self.__right_lane_inds]
 
+    # Y coordinates of the left lane line
     def lefty(self):
         return self.__nonzeroy[self.__left_lane_inds]
 
+    # Y coordinates of the right lane line
     def righty(self):
         return self.__nonzeroy[self.__right_lane_inds]
 
+    # Fit a 2nd degree polynomial to left lane line
     def left_fit(self):
         return np.polyfit(self.lefty(), self.leftx(), 2)
 
+    # Fit a 2nd degree polynomial to right lane line
     def right_fit(self):
         return np.polyfit(self.righty(), self.rightx(), 2)
 

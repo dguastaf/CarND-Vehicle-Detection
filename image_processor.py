@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 from find_lane_lines import full_search, poly_search
 import collections
-from matplotlib import pyplot as plt
 
 QUEUE_SIZE = 10
 
