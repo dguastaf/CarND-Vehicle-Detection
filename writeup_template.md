@@ -1,6 +1,4 @@
----
-
-**Advanced Lane Finding Project**
+*Advanced Lane Finding Project**
 
 The goals / steps of this project are the following:
 
@@ -15,7 +13,8 @@ The goals / steps of this project are the following:
 
 [//]: # (Image References)
 
-[image1]: ./examples/undistort_output.png "Undistorted"
+[distort_before]: ./camera_cal/calibration1.png "Original Image"
+[distort_after]: ./output_images/calibration_example.png "Undistorted"
 [image2]: ./test_images/test1.jpg "Road Transformed"
 [image3]: ./examples/binary_combo_example.jpg "Binary Example"
 [image4]: ./examples/warped_straight_lines.jpg "Warp Example"
@@ -36,13 +35,16 @@ You're reading it!
 
 ####1. Briefly state how you computed the camera matrix and distortion coefficients. Provide an example of a distortion corrected calibration image.
 
-The code for this step is contained in the first code cell of the IPython notebook located in "./examples/example.ipynb" (or in lines # through # of the file called `some_file.py`).  
+The code for this step is contained in camera_calibrator.py.
+
+First I check to see if there's cached data from a previous calibration. Since the camera doesn't change, there's no need to recalibrate the camera after changing the image processing pipeline. If there's no cached data, I will calibrate the camera.
 
 I start by preparing "object points", which will be the (x, y, z) coordinates of the chessboard corners in the world. Here I am assuming the chessboard is fixed on the (x, y) plane at z=0, such that the object points are the same for each calibration image.  Thus, `objp` is just a replicated array of coordinates, and `objpoints` will be appended with a copy of it every time I successfully detect all chessboard corners in a test image.  `imgpoints` will be appended with the (x, y) pixel position of each of the corners in the image plane with each successful chessboard detection.  
 
 I then used the output `objpoints` and `imgpoints` to compute the camera calibration and distortion coefficients using the `cv2.calibrateCamera()` function.  I applied this distortion correction to the test image using the `cv2.undistort()` function and obtained this result: 
 
-![alt text][image1]
+![alt text][distort_before]
+![alt text][distort_after]
 
 ###Pipeline (single images)
 
@@ -86,9 +88,14 @@ I verified that my perspective transform was working as expected by drawing the 
 
 ####4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
 
-Then I did some other stuff and fit my lane lines with a 2nd order polynomial kinda like this:
+Next, it's time to find the lane lines and fit a polynomial to them. The magic happens in 'lane_search.py'
 
-![alt text][image5]
+For the first image in the video, I performed a full search (`full_search()`) which looks at a histogram of all the points in the binary image. We assume that the maximums in each half of the image mark the locations of the lane lines. We then work our way up from the bottom of the image and create bounding boxes around to mark which points are part of the lane lines. I used 40 windows to increase the accuracy. After the image has been completely searched, I have two lists of points that represent the points that belong to each lane line. I then create an `ImageData` object to hold this data. 
+
+In the ImageData, I create a 2nd order polynomial that fits a line to the points in each side.
+
+For subsequent frames, I look at the data from the last frame and use this data to inform where we should start searching in the current frame. This eliminates the need to do the sliding window approach.
+
 
 ####5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 

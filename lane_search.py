@@ -77,9 +77,11 @@ def full_search(binary_warped):
         # Identify the nonzero pixels in x and y within the window
         good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xleft_low) & (nonzerox < win_xleft_high)).nonzero()[0]
         good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) & (nonzerox < win_xright_high)).nonzero()[0]
+        
         # Append these indices to the lists
         left_lane_inds.append(good_left_inds)
         right_lane_inds.append(good_right_inds)
+        
         # If you found > minpix pixels, recenter next window on their mean position
         if len(good_left_inds) > WINDOW_MIN_PX:
             leftx_current = np.int(np.mean(nonzerox[good_left_inds]))
@@ -125,15 +127,3 @@ def poly_search(img, left_fit, right_fit):
         return None
 
     return imageData
-    # Again, extract left and right line pixel positions
-    # leftx = nonzerox[left_lane_inds]
-    # lefty = nonzeroy[left_lane_inds]
-    # rightx = nonzerox[right_lane_inds]
-    # righty = nonzeroy[right_lane_inds]
-    # # Fit a second order polynomial to each
-    # left_fit = np.polyfit(lefty, leftx, 2)
-    # right_fit = np.polyfit(righty, rightx, 2)
-    # # # Generate x and y values for plotting
-    # ploty = np.linspace(0, binary_warped.shape[0] - 1, binary_warped.shape[0])
-    # left_fitx = left_fit[0] * ploty**2 + left_fit[1] * ploty + left_fit[2]
-    # right_fitx = right_fit[0] * ploty**2 + right_fit[1] * ploty + right_fit[2]

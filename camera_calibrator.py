@@ -11,17 +11,9 @@ NY = 6
 
 
 # Calibrates the camera by reading in a series of chessboard images and
-# uses OpenCV to find the distortion matrices. These matrices are saved
-# to avoid needing to recalibrate in future runs
+# uses OpenCV to find the distortion matrices.
 def calibrate_camera():
     print("Calibraing camera...")
-
-    mtx, dist = read_cal_data()
-    if mtx is not None and dist is not None:
-        print("Camera already calibrated.. returning previous results")
-
-        return mtx, dist
-
     # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
     objp = np.zeros((NY * NX, 3), np.float32)
     objp[:, :2] = np.mgrid[0:NX, 0:NY].T.reshape(-1, 2)
@@ -54,23 +46,4 @@ def calibrate_camera():
                                                        None,
                                                        None)
 
-    print("Saving calibration data")
-    np.savez(CAL_FILE, mtx, dist)
-    print("Done")
-
     return mtx, dist
-
-
-# Read cached image calibration data from disk. If nothing has been cached, return None
-def read_cal_data():
-    try:
-        npzfile = np.load(CAL_FILE + ".npz")
-        vals = []
-        for k in npzfile:
-            vals.append(npzfile[k])
-
-        return vals
-
-    except IOError:
-        print("No cached calibration data... calibrating camera.")
-        return None, None

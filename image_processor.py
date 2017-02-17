@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from find_lane_lines import full_search, poly_search
+from lane_search import full_search, poly_search
 import collections
 
 QUEUE_SIZE = 10
@@ -25,7 +25,6 @@ class ImageProcessor:
             imageData = poly_search(binary_warped, self.__last_image_data.left_fit(), self.__last_image_data.right_fit())
 
         if (not imageData):
-            print("full search")
             imageData = full_search(binary_warped)
 
         self.__save_image_data(imageData)
@@ -35,13 +34,9 @@ class ImageProcessor:
 
         return result
 
-    def __save_image_data(self, imageData):
-        self.__last_image_data = imageData
-        self.__prev_image_data.append(imageData)
-
-    def __undistort(self, image):
-        return cv2.undistort(image, self.__mtx, self.__dist, None, self.__mtx)
-
+    # Transforms the image into a thresholded binary image using an x-oriented
+    # sobel gradient along with the lightess and saturation channels of a HLS
+    # representation of the image
     def __transform_to_binary(self, image):
         gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 
@@ -62,7 +57,8 @@ class ImageProcessor:
         hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HLS).astype(np.float)
         single_channel = hsv[:, :, channel]
         binary = np.zeros_like(single_channel)
-        binary[(single_channel >= thresh[0]) & (single_channel <= thresh[1])] = 1
+        binary[(single_channel >= thresh[0]) &
+               (single_channel <= thresh[1])] = 1
 
         return binary
 
@@ -82,6 +78,37 @@ class ImageProcessor:
         binary[(scaled_sobel >= thresh[0]) & (scaled_sobel <= thresh[1])] = 1
 
         return binary
+
+    def __warp_image(self, image):
+        src = self.__get_warp_src(image)
+        dst = self.__get_warp_dst()
+
+        M = cv2.getPerspectiveTransform(src, dst)
+
+        return cv2.warpPerspective(image, M, (1280, 720))
+
+    def __get_warp_src(self, image):
+        image_center = image.shape[1] / 2
+        top_x_offset = 50
+        bottom_x_offset = 410
+
+        return np.float32([[image_center - top_x_offset, 450],
+                          [image_center + top_x_offset, 450],
+                          [image_center + bottom_x_offset, 680],
+                          [image_center - bottom_x_offset + 15, 680]])
+
+    def __get_warp_dst(self):
+        return np.float32([[320, 0],
+                          [960, 0],
+                          [960, 720],
+                          [320, 720]])
+
+    def __save_image_data(self, imageData):
+        self.__last_image_data = imageData
+        self.__prev_image_data.append(imageData)
+
+    def __undistort(self, image):
+        return cv2.undistort(image, self.__mtx, self.__dist, None, self.__mtx)
 
     def __draw_lane_box(self, orig_image, binary_warped):
         warp_zero = np.zeros_like(binary_warped).astype(np.uint8)
@@ -128,27 +155,3 @@ class ImageProcessor:
 
         radiusText = "{0:.2f}m offset".format(self.__last_image_data.getCenterOffset())
         cv2.putText(image, radiusText, (30, 120), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), thickness=2)
-
-    def __warp_image(self, image):
-        src = self.__get_warp_src(image)
-        dst = self.__get_warp_dst()
-
-        M = cv2.getPerspectiveTransform(src, dst)
-
-        return cv2.warpPerspective(image, M, (1280, 720))
-
-    def __get_warp_src(self, image):
-        image_center = image.shape[1] / 2
-        top_x_offset = 50
-        bottom_x_offset = 410
-
-        return np.float32([[image_center - top_x_offset, 450],
-                          [image_center + top_x_offset, 450],
-                          [image_center + bottom_x_offset, 680],
-                          [image_center - bottom_x_offset + 15, 680]])
-
-    def __get_warp_dst(self):
-        return np.float32([[320, 0],
-                          [960, 0],
-                          [960, 720],
-                          [320, 720]])

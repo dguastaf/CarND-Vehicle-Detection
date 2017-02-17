@@ -9,10 +9,10 @@ mtx, dist = calibrate_camera()
 # and lane finding.
 processor = ImageProcessor(mtx, dist)
 
-clip = VideoFileClip("project_video.mp4")
+clip = VideoFileClip("challenge_video.mp4")
 
 # Process each frame of the original video
 processed_clip = clip.fl_image(processor.process_image)
 
 # Write to file
-processed_clip.write_videofile("output_video.mp4", audio=False)
+processed_clip.write_videofile("output_video_challenge.mp4", audio=False)
