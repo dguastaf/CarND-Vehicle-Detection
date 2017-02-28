@@ -17,11 +17,32 @@ CELL_PER_BLOCK = 2
 HOG_CHANNEL = 'ALL'
 PICKLE_FILE = "model.p"
 
+KEY_SVC = "svc"
+KEY_SCALER = "scaler"
+
 
 def read_training_images():
     cars = glob.glob("training_images/vehicles/*/*.png")
     non_cars = glob.glob("training_images/non-vehicles/*/*.png")
     return cars, non_cars
+
+
+def save_model_data(svc, X_scaler):
+    data = {}
+    data[KEY_SVC] = svc
+    data[KEY_SCALER] = X_scaler
+    with open(PICKLE_FILE, mode='wb') as f:
+        pickle.dump(data, f)
+        print("Model data saved")
+
+
+def load_model_data():
+    if os.path.exists(PICKLE_FILE):
+        with open(PICKLE_FILE, "rb") as f:
+            data = pickle.load(f)
+            return data[KEY_SVC], data[KEY_SCALER]
+
+    return None, None
 
 
 # Define a function to return HOG features and visualization
@@ -93,21 +114,22 @@ def extract_features(imgs, cspace='RGB', orient=9,
 
 def train_model():
 
-    if os.path.exists(PICKLE_FILE):
-        with open(PICKLE_FILE, "rb") as f:
-            print("Model already trained.. returning")
-            return pickle.load(f)
-    else:
-        print("Training model from scratch")
+    svc, X_scaler = load_model_data()
+    if svc and X_scaler:
+        return svc, X_scaler
+
+    print("Training model from scratch")
 
     cars, non_cars = read_training_images()
 
+    print("Extracting car features")
     car_features = extract_features(cars, cspace=COLORSPACE,
                                     orient=ORIENT,
                                     pix_per_cell=PIX_PER_CELL,
                                     cell_per_block=CELL_PER_BLOCK,
                                     hog_channel=HOG_CHANNEL)
 
+    print("Extracting non-car features")
     notcar_features = extract_features(non_cars, cspace=COLORSPACE,
                                        orient=ORIENT,
                                        pix_per_cell=PIX_PER_CELL,
@@ -143,8 +165,6 @@ def train_model():
     print('My SVC predicts:     ', svc.predict(X_test[0:n_predict]))
     print('For these', n_predict, 'labels: ', y_test[0:n_predict])
 
-    with open(PICKLE_FILE, mode='wb') as f:
-        pickle.dump(svc, f)
-        print("Model saved")
+    save_model_data(svc, X_scaler)
 
-    return svc
+    return svc, X_scaler

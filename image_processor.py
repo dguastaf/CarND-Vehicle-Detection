@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from lane_search import full_search, poly_search
+from vehicle_detector import find_cars
 import collections
 
 QUEUE_SIZE = 10
@@ -17,20 +18,21 @@ class ImageProcessor:
 
     def process_image(self, image):
         image = self.__undistort(image)
-        binary = self.__transform_to_binary(image)
-        binary_warped = self.__warp_image(binary)
+        result = find_cars(image)
+        # binary = self.__transform_to_binary(image)
+        # binary_warped = self.__warp_image(binary)
 
-        imageData = None
-        if (self.__last_image_data):
-            imageData = poly_search(binary_warped, self.__last_image_data.left_fit(), self.__last_image_data.right_fit())
+        # imageData = None
+        # if (self.__last_image_data):
+        #     imageData = poly_search(binary_warped, self.__last_image_data.left_fit(), self.__last_image_data.right_fit())
 
-        if (not imageData):
-            imageData = full_search(binary_warped)
+        # if (not imageData):
+        #     imageData = full_search(binary_warped)
 
-        self.__save_image_data(imageData)
+        # self.__save_image_data(imageData)
 
-        result = self.__draw_lane_box(image, binary_warped)
-        self.__write_info(result)
+        # result = self.__draw_lane_box(image, binary_warped)
+        # self.__write_info(result)
 
         return result
 
