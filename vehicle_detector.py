@@ -10,14 +10,12 @@ ystart = 390
 ystop = 656
 
 
-def draw_rect(img, xleft, ytop, scale):
-    xbox_left = np.int(xleft * scale)
-    ytop_draw = np.int(ytop * scale)
-    win_draw = np.int(window * scale)
-    cv2.rectangle(img, (xbox_left, ytop_draw + ystart),
-                  (xbox_left + win_draw,
-                   ytop_draw + win_draw + ystart),
-                  (0, 0, 255), 6)
+def draw_rect(img, box):
+    x1 = box[0][0]
+    y1 = box[0][1]
+    x2 = box[1][0]
+    y2 = box[1][1]
+    cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 255), 6)
 
 
 # Define a single function that can extract features using hog sub-sampling
@@ -78,14 +76,33 @@ def find_cars_with_scale(img, svc, X_scaler, scale):
             test_prediction = svc.predict(test_features)
 
             if test_prediction == 1:
-                found_boxes.append((xleft, ytop, scale))
+                xbox_left = np.int(xleft * scale)
+                ytop_draw = np.int(ytop * scale)
+                win_draw = np.int(window * scale)
+                x1 = xbox_left
+                y1 = ytop_draw + ystart
+                x2 = xbox_left + win_draw
+                y2 = ytop_draw + win_draw + ystart
+
+                found_boxes.append(((x1, y1), (x2, y2)))
 
     return found_boxes
 
 
+def add_heat(heatmap, bbox_list):
+    # Iterate through list of bboxes
+    for box in bbox_list:
+        # Add += 1 for all pixels inside each bbox
+        # Assuming each "box" takes the form ((x1, y1), (x2, y2))
+        heatmap[box[0][1]:box[1][1], box[0][0]:box[1][0]] += 1
+
+    # Return updated heatmap
+    return heatmap
+
+
 def find_cars(img):
     svc, X_scaler = train_model()
-    scales = [.6, 1.2, 1.75]
+    scales = [.6, 1.5, 2]
 
     found_boxes = []
     for scale in scales:
@@ -93,6 +110,6 @@ def find_cars(img):
             find_cars_with_scale(img, svc, X_scaler, scale)
 
     out_img = np.copy(img)
-    for xleft, ytop, scale in found_boxes:
-        draw_rect(out_img, xleft, ytop, scale)
+    for box in found_boxes:
+        draw_rect(out_img, box)
     return out_img
