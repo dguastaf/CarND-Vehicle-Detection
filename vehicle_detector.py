@@ -1,9 +1,6 @@
 import numpy as np
 import cv2
 from vehicle_detection_model import *
-import matplotlib.pyplot as plt
-from scipy.ndimage.measurements import label
-import matplotlib.image as mpimg
 
 orient = 9
 window = 64
@@ -12,43 +9,17 @@ cell_per_block = 2
 ystart = 400
 ystop = 656
 cells_per_step = 2
-
-
-def draw_labels(img, labels):
-    # Iterate through all detected cars
-    for car_number in range(1, labels[1] + 1):
-        # Find pixels with each car_number label value
-        nonzero = (labels[0] == car_number).nonzero()
-        # Identify x and y values of those pixels
-        nonzeroy = np.array(nonzero[0])
-        nonzerox = np.array(nonzero[1])
-        # Define a bounding box based on min/max x and y
-        bbox = ((np.min(nonzerox), np.min(nonzeroy)),
-                (np.max(nonzerox), np.max(nonzeroy)))
-
-        if (bbox[1][0] - bbox[0][0] > 20 and bbox[1][1] - bbox[0][1] > 20):
-            # Draw the box on the image
-            cv2.rectangle(img, bbox[0], bbox[1], (0, 0, 255), 6)
-    # Return the image
-    return img
-
-
-def draw_rect(img, boxes):
-    for box in boxes:
-        x1 = box[0][0]
-        y1 = box[0][1]
-        x2 = box[1][0]
-        y2 = box[1][1]
-        cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 255), 6)
+spatial_size = (32, 32)
+hist_bins = 32
 
 
 # Define a single function that can extract features using hog sub-sampling
 # and make predictions
 def find_cars_with_scale(img, svc, X_scaler, scale):
-    img = img.astype(np.float32)/255
+    img = img.astype(np.float32) / 255
+
     img_tosearch = img[ystart:ystop, :, :]
-    ctrans_tosearch = cv2.cvtColor(img_tosearch, cv2.COLOR_RGB2HLS)
-    # ctrans_tosearch = ctrans_tosearch.astype(np.float32)/255
+    ctrans_tosearch = cv2.cvtColor(img_tosearch, cv2.COLOR_RGB2HSV)
 
     if scale != 1:
         imshape = ctrans_tosearch.shape
@@ -103,7 +74,8 @@ def find_cars_with_scale(img, svc, X_scaler, scale):
             hist_features = color_hist(subimg, nbins=hist_bins)
 
             # Scale features and make a prediction
-            test_features = X_scaler.transform(np.hstack((spatial_features, hist_features, hog_features)).reshape(1, -1))
+            all_features = np.hstack((spatial_features, hist_features, hog_features))
+            test_features = X_scaler.transform(all_features.reshape(1, -1))
             test_prediction = svc.predict(test_features)
 
             if test_prediction == 1:
@@ -150,13 +122,6 @@ def find_cars(img):
         heat = add_heat(heat, found_boxes)
 
     thresh_heat = apply_threshold(heat, 2)
-    clip_heat = np.clip(thresh_heat, 0, 255)
-    labels = label(clip_heat)
-    # plt.imshow(labels[0], cmap='gray')
-    # plt.title('Heat Map')
-    # plt.show()
+    clip_heat = np.clip(thresh_heat, 0, 1)
 
-    out_img = np.copy(img)
-    draw_rect(out_img, all_boxes)
-    # draw_labels(out_img, labels)
-    return out_img
+    return clip_heat

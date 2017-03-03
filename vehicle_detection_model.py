@@ -10,7 +10,7 @@ import pickle
 import os
 
 
-COLORSPACE = 'HLS'
+COLORSPACE = 'HSV'
 ORIENT = 9
 PIX_PER_CELL = 8
 CELL_PER_BLOCK = 2

@@ -3,8 +3,10 @@ import numpy as np
 from lane_search import full_search, poly_search
 from vehicle_detector import find_cars
 import collections
+from scipy.ndimage.measurements import label
+from image_data import ImageData
 
-QUEUE_SIZE = 10
+QUEUE_SIZE = 20
 
 
 class ImageProcessor:
@@ -17,11 +19,13 @@ class ImageProcessor:
         self.__last_image_data = None
 
     def process_image(self, image):
-        image = self.__undistort(image)
-        result = find_cars(image)
+        undist = self.__undistort(image)
+        vehicle_heatmap = find_cars(image)
+
         # binary = self.__transform_to_binary(image)
         # binary_warped = self.__warp_image(binary)
 
+        imageData = ImageData(image, None, None, None, None)
         # imageData = None
         # if (self.__last_image_data):
         #     imageData = poly_search(binary_warped, self.__last_image_data.left_fit(), self.__last_image_data.right_fit())
@@ -29,12 +33,15 @@ class ImageProcessor:
         # if (not imageData):
         #     imageData = full_search(binary_warped)
 
-        # self.__save_image_data(imageData)
+        imageData.set_vehicle_heatmap(vehicle_heatmap)
 
-        # result = self.__draw_lane_box(image, binary_warped)
+        self.__save_image_data(imageData)
+
+        # result = self.__draw_lane_box(undist, binary_warped)
+        # self.draw_vehicle_boxes(result)
         # self.__write_info(result)
-
-        return result
+        self.draw_vehicle_boxes(image)
+        return image
 
     # Transforms the image into a thresholded binary image using an x-oriented
     # sobel gradient along with the lightess and saturation channels of a HLS
@@ -157,3 +164,32 @@ class ImageProcessor:
 
         radiusText = "{0:.2f}m offset".format(self.__last_image_data.getCenterOffset())
         cv2.putText(image, radiusText, (30, 120), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), thickness=2)
+
+    def draw_labels(self, img, labels):
+        # Iterate through all detected cars
+        for car_number in range(1, labels[1] + 1):
+            # Find pixels with each car_number label value
+            nonzero = (labels[0] == car_number).nonzero()
+            # Identify x and y values of those pixels
+            nonzeroy = np.array(nonzero[0])
+            nonzerox = np.array(nonzero[1])
+            # Define a bounding box based on min/max x and y
+            bbox = ((np.min(nonzerox), np.min(nonzeroy)),
+                    (np.max(nonzerox), np.max(nonzeroy)))
+
+            if (bbox[1][0] - bbox[0][0] > 20 and bbox[1][1] - bbox[0][1] > 20):
+                # Draw the box on the image
+                cv2.rectangle(img, bbox[0], bbox[1], (0, 0, 255), 6)
+
+    def draw_vehicle_boxes(self, img):
+        heatmap = np.zeros_like(img[:, :, 0]).astype(np.float)
+
+        for data in self.__prev_image_data:
+            heatmap += data.get_vehicle_heatmap()
+
+        threshold = int(len(self.__prev_image_data) * .7)
+        heatmap[heatmap <= threshold] = 0
+
+        # heatmap = self.__prev_image_data[0].get_vehicle_heatmap()
+        labels = label(heatmap)
+        self.draw_labels(img, labels)

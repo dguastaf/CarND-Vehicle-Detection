@@ -13,6 +13,7 @@ class ImageData:
         self.__nonzeroy = nonzeroy
         self.__left_lane_inds = left_lane_inds
         self.__right_lane_inds = right_lane_inds
+        self.__vehicle_heatmap = None
 
     # X coordinates of the left lane line
     def leftx(self):
@@ -48,6 +49,12 @@ class ImageData:
     def right_fit_x(self):
         return self.right_fit()[0] * self.ploty()**2 \
             + self.right_fit()[1] * self.ploty() + self.right_fit()[2]
+
+    def set_vehicle_heatmap(self, vehicle_heatmap):
+        self.__vehicle_heatmap = vehicle_heatmap
+
+    def get_vehicle_heatmap(self):
+        return self.__vehicle_heatmap
 
     def getCurveRadius(self):
         left_fit_cr = np.polyfit(self.lefty() * YM_PER_PIX, self.leftx() * XM_PER_PIX, 2)

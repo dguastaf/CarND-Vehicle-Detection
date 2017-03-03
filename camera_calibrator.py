@@ -1,6 +1,8 @@
 import numpy as np
 import cv2
 import glob
+import pickle
+import os
 
 CAL_DIR = 'camera_cal'
 CALIBRATION_IMG_WILDCARD = CAL_DIR + '/calibration*.jpg'
@@ -10,9 +12,33 @@ NX = 9
 NY = 6
 
 
+def save_calibration_data(mtx, dist):
+    data = {}
+    data["mtx"] = mtx
+    data["dist"] = dist
+    with open("calibration.p", mode='wb') as f:
+        pickle.dump(data, f)
+        print("Model data saved")
+
+
+def load_calibration_data():
+    if os.path.exists("calibration.p"):
+        with open("calibration.p", "rb") as f:
+            data = pickle.load(f)
+            return data["mtx"], data["dist"]
+
+    return None, None
+
+
 # Calibrates the camera by reading in a series of chessboard images and
 # uses OpenCV to find the distortion matrices.
 def calibrate_camera():
+
+    mtx, dist = load_calibration_data()
+
+    if mtx is not None:
+        return mtx, dist
+
     print("Calibraing camera...")
     # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
     objp = np.zeros((NY * NX, 3), np.float32)
@@ -45,5 +71,7 @@ def calibrate_camera():
                                                        img_shape,
                                                        None,
                                                        None)
+
+    save_calibration_data(mtx, dist)
 
     return mtx, dist
