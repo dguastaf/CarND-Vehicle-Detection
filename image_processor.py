@@ -18,6 +18,17 @@ class ImageProcessor:
         self.__prev_image_data = collections.deque(maxlen=QUEUE_SIZE)
         self.__last_image_data = None
 
+    def process_image_for_vehicles(self, image):
+        vehicle_heatmap = find_cars(image)
+        imageData = ImageData(image, None, None, None, None)
+        imageData.set_vehicle_heatmap(vehicle_heatmap)
+
+        self.__save_image_data(imageData)
+        self.draw_vehicle_boxes(image)
+        return image
+
+
+
     def process_image(self, image):
         undist = self.__undistort(image)
         vehicle_heatmap = find_cars(image)
@@ -187,7 +198,7 @@ class ImageProcessor:
         for data in self.__prev_image_data:
             heatmap += data.get_vehicle_heatmap()
 
-        threshold = int(len(self.__prev_image_data) * .7)
+        threshold = int(len(self.__prev_image_data) * .8)
         heatmap[heatmap <= threshold] = 0
 
         # heatmap = self.__prev_image_data[0].get_vehicle_heatmap()

@@ -18,14 +18,14 @@ def draw_labels(img, labels):
             bbox = ((np.min(nonzerox), np.min(nonzeroy)),
                     (np.max(nonzerox), np.max(nonzeroy)))
 
-            if (bbox[1][0] - bbox[0][0] > 20 and bbox[1][1] - bbox[0][1] > 20):
+            if (bbox[1][0] - bbox[0][0] > 30 and bbox[1][1] - bbox[0][1] > 30):
                 # Draw the box on the image
                 cv2.rectangle(img, bbox[0], bbox[1], (0, 0, 255), 6)
 
 
 # img = mpimg.imread("test_images/test1.jpg")
 clip = VideoFileClip("project_video.mp4")
-img = clip.get_frame(40.5)
+img = clip.get_frame(45.5)
 
 heatmap = find_cars(img)
 

@@ -11,7 +11,7 @@ mtx, dist = calibrate_camera()
 # and lane finding.
 processor = ImageProcessor(mtx, dist)
 
-clip = VideoFileClip("short_video.mp4")
+clip = VideoFileClip("project_video.mp4")
 
 
 # out_img = processor.process_image(clip.get_frame(55))
@@ -23,4 +23,4 @@ clip = VideoFileClip("short_video.mp4")
 processed_clip = clip.fl_image(processor.process_image)
 
 # Write to file
-processed_clip.write_videofile("short_video_out.mp4", audio=False)
+processed_clip.write_videofile("video_out.mp4", audio=False)
