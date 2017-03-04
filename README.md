@@ -1,111 +1,98 @@
-## Advanced Lane Finding
+## Vehicle Detection and Tracking
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
 The goals / steps of this project are the following:
 
-* Compute the camera calibration matrix and distortion coefficients given a set of chessboard images.
-* Apply a distortion correction to raw images.
-* Use color transforms, gradients, etc., to create a thresholded binary image.
-* Apply a perspective transform to rectify binary image ("birds-eye view").
-* Detect lane pixels and fit to find the lane boundary.
-* Determine the curvature of the lane and vehicle position with respect to center.
-* Warp the detected lane boundaries back onto the original image.
-* Output visual display of the lane boundaries and numerical estimation of lane curvature and vehicle position.
+* Perform a Histogram of Oriented Gradients (HOG) feature extraction on a labeled training set of images and train a classifier Linear SVM classifier
+* Optionally, you can also apply a color transform and append binned color features, as well as histograms of color, to your HOG feature vector.
+* Note: for those first two steps don't forget to normalize your features and randomize a selection for training and testing.
+* Implement a sliding-window technique and use your trained classifier to search for vehicles in images.
+* Run your pipeline on a video stream (start with the test_video.mp4 and later implement on full project_video.mp4) and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
+* Estimate a bounding box for vehicles detected.
 
 [//]: # (Image References)
 
-[distort_after]: ./output_images/calibration_example.jpg "Undistorted"
-[image2]: ./test_images/test1.jpg "Road Transformed"
-[image3]: ./examples/binary_combo_example.jpg "Binary Example"
-[image4]: ./examples/warped_straight_lines.jpg "Warp Example"
-[image5]: ./examples/color_fit_lines.jpg "Fit Visual"
-[image6]: ./examples/example_output.jpg "Output"
-[video1]: ./project_video.mp4 "Video"
-
-## [Rubric](https://review.udacity.com/#!/rubrics/571/view) Points
-###Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
-
 ---
-###Writeup / README
+###Writeup
 
-####1. Provide a Writeup / README that includes all the rubric points and how you addressed each one.  You can submit your writeup as markdown or pdf.  [Here](https://github.com/udacity/CarND-Advanced-Lane-Lines/blob/master/writeup_template.md) is a template writeup for this project you can use as a guide and a starting point.  
+####1. Provide a Writeup / README that includes all the rubric points and how you addressed each one. 
 
 You're reading it!
-###Camera Calibration
 
-####1. Briefly state how you computed the camera matrix and distortion coefficients. Provide an example of a distortion corrected calibration image.
+###Histogram of Oriented Gradients (HOG)
 
-The code for this step is contained in `camera_calibrator.py.`
+####1. Explain how (and identify where in your code) you extracted HOG features from the training images. Explain how you settled on your final choice of HOG parameters.
 
-I start by preparing "object points", which will be the (x, y, z) coordinates of the chessboard corners in the world. Here I am assuming the chessboard is fixed on the (x, y) plane at z=0, such that the object points are the same for each calibration image.  Thus, `objp` is just a replicated array of coordinates, and `objpoints` will be appended with a copy of it every time I successfully detect all chessboard corners in a test image.  `imgpoints` will be appended with the (x, y) pixel position of each of the corners in the image plane with each successful chessboard detection.  
+All the code to train my model is contained within `vehicle_detection_model.py` The function `train_model` is where the magic happens.
+First I read in the training and testing images separately (you'll see why later on) using two glob calls. I then extract the features from each image in `extract_features`.  
 
-I then used the output `objpoints` and `imgpoints` to compute the camera calibration and distortion coefficients using the `cv2.calibrateCamera()` function.  I applied this distortion correction to the test image using the `cv2.undistort()` function and obtained this result:  
+For HOG, I use the following parameters:  
+* orientations = 9
+* pixels_per_cell = 8
+* cell_per_block = 2
 
-<table>
-<tr><td>Original Image:</td> <td>Undistorted</td></tr>
-<tr>
-    <td><img src='./camera_cal/calibration1.jpg' height=200px /></td> 
-    <td><img src='./output_images/calibration_example.jpg' height=200px /></td>
-</tr>
-</table>
+I found these parameters to be pretty good - my accuracy was above 90% right from the start. During my experimentation, changing the color space had the most profound impact. I started with HLS but eventually settled on using HSV which bumped the accuracy to 94%.  
 
-###Pipeline (single images)
+Also, I added spacial binning and histograms of color to produce even more feature vectors.  
 
-####1. Provide an example of a distortion-corrected image.
-After I calculated the camera calibration and distortion coefficients, I constructed an ImageProcessor (image_processor.py) object with these coefficients. This object will be used to do all the heavy lifting during for image processing.
+To allow faster experimentation, I cached these features instead of pre-computing them every run.  
 
-First, each image is undistored using the coefficients and `cv2.undistort()`. Here's an example of one:  
-<img src='./output_images/test_undist.jpg' height=200px/>
+####2. Describe how (and identify where in your code) you trained a classifier using your selected HOG features (and color features if you used them).  
 
-####2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
+With this feature set, I trained a linear SVM. You can see this logic in `vehidle_detection_model.py#train_model`.  
+At first, I was using sklearn's train_test_split to split up my training and testing data which produced 99% accuracy. However, when I used the model in my sliding window search, I got many false positives. After reading through some forum posts, I realized that doing a random split was causing my model to overfit since the video was taken in sequence - many of my test images were very similar to training images. To remedy this, I split up the training and test data manually to make sure that the images differed enough. Ultimately, this led to a model with 98% accuracy that performed well in the pipeline.
 
-I next apply color transforms and gradients to the image to create a thresholded binary image in `image_processor.__transform_to_binary()`. For the gradients, I just x-oriented sobel. I found other variants to not produce great results. Next I transform the image to the HLS colorspace and compute thresholds for the lightness and saturation channels. I then combine these 3 thresholds with this formula: `(gradx | (lightness & saturation))`
+###Sliding Window Search
 
-<img src='./output_images/threshold_examples.png' height=500px/>
+####1. Describe how (and identify where in your code) you implemented a sliding window search. How did you decide what scales to search and how much to overlap windows?
 
-####3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
+The code for this lives in `vehicle_detector.py#find_cars`  
 
-I feed the binary image into `__warp_image()` This function first creates 2 matrices for the src and destination points. It then calls `cv2.getPerspectiveTransform()` to get the transform matrix and then applies the transform to the binary image using `cv2.warpPerspective()` 
+This is where I spent a majority of my time. My algorithm computes all the features over a portion of the image (we dont need to look for vehicles in the sky). Then we use a sliding window to generate 64x64 px images and feed them into the classifier. If the classifier determines this window is a car, we save the image's boundaries.  
 
-<img src='./output_images/warped_no_lines.png' height=200px/>
+I repeated this process after scaling the image 3 times - .9, 1.5, and 2. Based on lots of experimentation, I found this was able to accurately draw the bounding box in most circumstances.
 
+####2. Show some examples of test images to demonstrate how your pipeline is working. What did you do to optimize the performance of your classifier?  
 
-####4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
+Here's an example of an image with all the positive windows drawn.  
+<img src='./output_images/boxes.png' height=350px/>
 
-Next, it's time to find the lane lines and fit a polynomial to them. The magic happens in 'lane_search.py'
+HOG feature extraction is an expensive operation. To make my algorithm more efficient, I computed the HOG features over the entire image and then moved my window throughout this feature list, eliminating the need to compute HOG for each window position. You can see this in vehicle_detecor.py lines 43-49
 
-For the first image in the video, I performed a full search (`full_search()`) which looks at a histogram of all the points in the binary image. We assume that the maximums in each half of the image mark the locations of the lane lines. We then work our way up from the bottom of the image and create bounding boxes around to mark which points are part of the lane lines. I used 40 windows to increase the accuracy. After the image has been completely searched, I have two lists of points that represent the points that belong to each lane line. I then create an `ImageData` object to hold this data. 
+###Video Implementation
 
-In the ImageData, I create a 2nd order polynomial that fits a line to the points in each side.
+####1. Provide a link to your final video output. Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.). 
 
-For subsequent frames, I look at the data from the last frame and use this data to inform where we should start searching in the current frame. This eliminates the need to do the sliding window approach.
+Here's the <a href = "output_video.mp4">final video</a>
 
-####5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
+####2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
 
-In `image_data.py` I calculate the radius of curvature in `getCurveRadius()`. I create a 2nd degree polynomial after scaling the pixels to meters. To get the radius of curviture, I use the forumla <a href="http://www.intmath.com/applications-differentiation/8-radius-curvature.php">described here</a>
+After I found the bounding boxes for each scale, I built a heatmap to determine the locations that were most commonly marked.  
 
-####6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
+Example:  
+<img src='./output_images/heat_no_threshold.png' height=350px/>
 
-I implemented this step in `__draw_lane_box` in `image_processor.py` My forumla averages the last 10 frames to make the lane finding smoother.
+As you can see, there's a good amount of noise from false positives. Next, I applied a threshold to remove the noise and used `scipy.ndimage.measurements.label()` to group the heatmap locations into distinct sections.  
 
-<img src='./output_images/lane_box.png' height=200px />
+Example:  
+<img src='./output_images/heat_threshold.png' height=350px/>
 
----
+This produced the final result as seen here.  
+<img src='./output_images/final_boxes.png' height=350px/>
 
-###Pipeline (video)
+To make my pipeline more robust, I averaged these heatmaps over the last 20 frames. This eliminated more false positives and missed detections. You can see this logic in `image_processor.py#draw_vehicle_boxes`
 
-####1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
-
-Here's a [link to my video result](./output_video.mp4)
-
----
 
 ###Discussion
 
-####1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
+####1. Briefly discuss any problems / issues you faced in your implementation of this project. Where will your pipeline likely fail? What could you do to make it more robust?
 
-I faced several problems when working through this project. First, I had to do lots of experimentation to figure out the best combination of color spaces and gradients that would best mark the lane lines in various situations. After I figured this out, I had to make sure that my image warping left the lane lines parallel. Again, this took some experimentation. Last, I had to read through some of the sample code to fully understand how the polynomials were computed and how they were used to mark the lane lines. 
+My first issue was with training my model. I was getting high accuracy scores, but poor results when I plugged it into my image pipeline. The remedy was to make sure that my training and test data was distinct and did not contain similar images.  
 
-One of the biggest issues with my algorithm is that it's slow. It takes ~8 minutes to process a 1 minute file. This definitely wouldn't work in a real-time environment. I could speed it up skipping a couple frames between calculations and re-implementing my solution using C++.
+Next, I faced problems when tuning hyperparameters for the sliding window approach. Often I would tune the parameters to work with a one test image, but it would fail for another. I had to do lots of experimentation to make it work for most situations.  
 
-Next, I think my solution will be sensitive to shadows as the lightness and saturation is heavily used when creating the binary image. In addition, my solution doesn't have a great way of recovering if the lane lines are lost in previous frames. 
+My algorithm is far from perfect. First, it doesn't always accurately draw the box around the cars and may only detect a portion of the car. It'll likely fail when there's many cars on the road as it tends to group nearby cars together as one car.  
+
+Last, but most importantly, my algorithm is slow. It takes about 1 minute of processing for 1 second of video... yikes.
+
+To make my algorithm more robust I can do a couple things. To improve both performance and accuracy, I can eliminate the number of times that I need to search the entire image and instead look at the car locations in the previous frame and do my sliding window around that. I'd only do a full search at regular intervals like every 5th frame. I would also like to experiment with using a convolutional neural network to see if I can get better accuracy and performance with image classification.
